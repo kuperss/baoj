@@ -23,10 +23,21 @@ async function getWorker(onProgress) {
   if (worker) return worker;
   worker = await Tesseract.createWorker(['chi_tra', 'eng'], 1, {
     logger: m => {
-      if (onProgress && (m.status === 'recognizing text' || m.status.includes('language')))
-        onProgress(m);
+      if (onProgress) onProgress(m);
     },
   });
+  // PSM 6 = uniform block of text(對帳單一頁文字最穩定)
+  // preserve_interword_spaces 保留欄位間空白,辨識表格時不會把多個空格塌成一個
+  try {
+    await worker.setParameters({
+      tessedit_pageseg_mode: '6',
+      preserve_interword_spaces: '1',
+      // 限制能輸出的字元集合 — 中英文 + 數字 + 常用標點
+      // 不設 whitelist 反而辨識率較高,這裡先註解
+    });
+  } catch (e) {
+    console.warn('setParameters failed', e);
+  }
   return worker;
 }
 

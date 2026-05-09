@@ -454,15 +454,16 @@ function setStatus(msg, processing = false) {
 
 async function doShutter() {
   try {
-    setStatus('擷取畫面…', true);
-    const { dataUrl } = await capture($('#ocr-video'), $('#ocr-canvas'));
+    setStatus('擷取畫面與前處理…', true);
+    const { dataUrl, w, h } = await capture($('#ocr-video'), $('#ocr-canvas'));
+    console.log(`[OCR] capture ${w}x${h}`);
     $('#ocr-preview-img').src = dataUrl;
     $('#ocr-preview').classList.remove('hidden');
     $('#ocr-video').classList.add('hidden');
     $('#ocr-frame').classList.add('hidden');
     $('#btn-ocr-shutter').classList.add('hidden');
     $('#btn-ocr-retake').classList.remove('hidden');
-    setStatus('辨識中…(首次需下載語言模型)', true);
+    setStatus('辨識中…(首次需下載語言模型 ~10MB)', true);
     const text = await recognize(dataUrl, m => {
       if (m.status === 'recognizing text') {
         setStatus(`辨識中 ${Math.round(m.progress * 100)}%`, true);
@@ -470,12 +471,19 @@ async function doShutter() {
         setStatus(`下載語言模型 ${Math.round((m.progress || 0) * 100)}%…`, true);
       }
     });
-    setStatus('辨識完成,請點選候選', false);
+    if (!text || !text.trim()) {
+      setStatus('辨識完成但沒讀到任何文字 — 請拉近重拍', false);
+      toast('沒讀到文字,請拉近拍清楚', 'warning', 3500);
+    } else {
+      const charCount = text.replace(/\s/g, '').length;
+      setStatus(`辨識完成 (${charCount} 字)`, false);
+    }
     showCandidates(text);
   } catch (e) {
-    console.error(e);
-    setStatus(`辨識失敗: ${e.message}`, false);
-    toast('辨識失敗', 'error');
+    console.error('[OCR error]', e);
+    const msg = e?.message || String(e);
+    setStatus(`辨識失敗: ${msg}`, false);
+    toast(`辨識失敗:${msg}`, 'error', 4500);
   }
 }
 
@@ -496,26 +504,43 @@ function showCandidates(text) {
 
   // 文字模式:客戶編號或客戶名稱
   if (ocrContext.mode === 'text-field') {
+    console.log('[OCR raw]\n' + text);
     const isCode = ocrContext.fieldKey === 'customerCode';
     const list = isCode ? extractCodeCandidates(text) : extractNameCandidates(text);
     if (list.length === 0) {
       wrap.appendChild(emptyOcrCard(isCode ? '未抽到編號' : '未抽到名稱'));
-      return;
+    } else {
+      list.forEach(s => wrap.appendChild(ocrCard(isCode ? '候選編號' : '候選名稱', s, () => {
+        applyTextValue(s);
+      })));
     }
-    list.forEach(s => wrap.appendChild(ocrCard(isCode ? '候選編號' : '候選名稱', s, () => {
-      applyTextValue(s);
-    })));
+    wrap.appendChild(rawTextCard(text));
     return;
   }
 
   // 數字 / 日期模式
+  console.log('[OCR raw]\n' + text);
   const { amounts, dates } = extractCandidates(text);
   if (amounts.length === 0 && dates.length === 0) {
     wrap.appendChild(emptyOcrCard('未抽到數字或日期'));
+    wrap.appendChild(rawTextCard(text));
     return;
   }
   amounts.forEach(n => wrap.appendChild(ocrCard('候選金額', fmt(n), () => applyAmount(n))));
   dates.forEach(d => wrap.appendChild(ocrCard('候選日期', d, () => applyDate(d))));
+  wrap.appendChild(rawTextCard(text));
+}
+
+function rawTextCard(text) {
+  const card = document.createElement('div');
+  card.className = 'ocr-card ocr-card-raw';
+  card.innerHTML = `
+    <details style="width: 100%;">
+      <summary class="ocr-raw-summary" style="cursor:pointer;font-size:12px;color:var(--text-3);font-weight:600">原始辨識文字</summary>
+      <pre class="ocr-raw">${escapeHtml(text) || '(空)'}</pre>
+    </details>
+  `;
+  return card;
 }
 
 function ocrCard(label, value, onApply) {
@@ -549,6 +574,10 @@ function billPanel(fields) {
   const panel = document.createElement('div');
   panel.className = 'ocr-bill-panel';
   const foundCount = items.filter(it => it.value != null && it.value !== '').length;
+  const rawText = fields.rawText || '';
+
+  // Console 也印一份方便接 USB DevTools 看
+  console.log('[OCR raw]\n' + rawText);
 
   panel.innerHTML = `
     <div class="ocr-bill-head">
@@ -556,6 +585,11 @@ function billPanel(fields) {
       <span>辨識完成 — 找到 ${foundCount}/${items.length} 個欄位</span>
     </div>
     <div class="ocr-bill-fields"></div>
+    <details class="ocr-raw-wrap">
+      <summary class="ocr-raw-summary">原始辨識文字 (除錯用,可複製)</summary>
+      <pre class="ocr-raw">${escapeHtml(rawText) || '(空)'}</pre>
+      <button type="button" class="btn-link ocr-raw-copy">複製文字</button>
+    </details>
     <button type="button" class="ocr-bill-cta" id="ocr-fill-all">
       ${icons.check}
       <span>全部填入</span>
@@ -591,6 +625,19 @@ function billPanel(fields) {
     eClass2: fields.eClass2,
     unpaid: fields.overdue,
   });
+
+  // 複製原始文字
+  const copyBtn = panel.querySelector('.ocr-raw-copy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(rawText);
+        toast('已複製原始辨識文字', 'success');
+      } catch (e) {
+        toast('複製失敗,請手動長按選取', 'error');
+      }
+    });
+  }
 
   panel.querySelector('#ocr-fill-all').addEventListener('click', () => {
     const values = JSON.parse(panel.dataset.values);

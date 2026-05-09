@@ -452,6 +452,61 @@ input  { font-family: inherit; }
   justify-content: center;
   gap: 6px;
 }
+
+/* ─── 原始辨識文字(除錯用) ─── */
+.ocr-raw-wrap {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--slate-50);
+  padding: 8px 10px;
+}
+.ocr-raw-summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+.ocr-raw-summary::-webkit-details-marker { display: none; }
+.ocr-raw-summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform var(--t-fast);
+  font-size: 10px;
+}
+.ocr-raw-wrap[open] .ocr-raw-summary::before { transform: rotate(90deg); }
+.ocr-raw {
+  margin: 8px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-2);
+  background: var(--surface);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.ocr-raw-copy { margin-top: 6px; font-size: 11px; }
+.ocr-card-raw {
+  background: rgba(255, 255, 255, 0.92);
+  display: block;
+  padding: 10px 12px;
+}
+.ocr-card-raw .ocr-raw {
+  background: var(--slate-50);
+  max-height: 160px;
+}
 .ocr-bill-cta:hover { background: var(--primary-hover); }
 .ocr-bill-cta:disabled { background: var(--slate-300); cursor: not-allowed; }
 .ocr-bill-cta svg { width: 16px; height: 16px; }
