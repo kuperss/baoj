@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>應收帳款計算</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./css/styles.css?v=6">
+  <link rel="stylesheet" href="./css/styles.css?v=7">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
 </head>
 <body>
@@ -322,11 +322,39 @@
 <!-- Toast -->
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-<script type="module" src="./js/app.js?v=6"></script>
+<!-- 版本標記(不起眼處,方便確認是否吃到新版) -->
+<footer class="app-footer">
+  <span class="version-badge" id="app-version">v7 · 2026-05-10</span>
+</footer>
+
+<script type="module" src="./js/app.js?v=7"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW reg failed', err));
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        // 偵測到新版 SW 安裝完成 → 把版本徽章變成「點此更新」
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              const badge = document.getElementById('app-version');
+              if (badge) {
+                badge.textContent = '🔄 新版已備妥 · 點此更新';
+                badge.classList.add('has-update');
+                badge.addEventListener('click', () => location.reload(), { once: true });
+              }
+            }
+          });
+        });
+      }).catch(err => console.warn('SW reg failed', err));
+      // 新 SW 接管後直接重整,確保拿到新內容
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        // 不自動 reload,只標示「新版已備妥」讓使用者主動點
+      });
     });
   }
 </script>
