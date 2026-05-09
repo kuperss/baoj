@@ -117,6 +117,53 @@ export function extractNameCandidates(text) {
   return candidates.slice(0, 6);
 }
 
+// 從類別表抽取指定列的「其他1」欄數字。
+// 表格欄位順序:類別 / 實價 / 其他1 / 總計
+//   3 個數字 → 其他1 = 中間
+//   2 個數字 → 因為實價/其他1 哪個為空無法從一列文字判斷,回 null(避免誤填)
+//   < 2 個 → null
+//
+// 限制 slice 在同一列(到下個 \n),避免把下一列的數字吃進來。
+export function findCategoryOther(text, label) {
+  const escLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(?:^|[^A-Z0-9])(${escLabel})(?![A-Z0-9])`, 'gi');
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const startIdx = m.index + m[0].length;
+    const nextNL = text.indexOf('\n', startIdx);
+    const lineEnd = nextNL < 0 ? text.length : nextNL;
+    let sameLineRest = text.slice(startIdx, lineEnd);
+
+    let numStrs = sameLineRest.match(/-?[\d,]{1,12}/g) || [];
+    let nums = numStrs
+      .map(s => s.replace(/,/g, ''))
+      .filter(s => /^-?\d+$/.test(s))
+      .map(Number)
+      .filter(n => Number.isFinite(n))
+      .slice(0, 3);
+
+    // 如果同一列沒有數字(label 後直接 \n),嘗試讀下一列
+    // ── 但只在下一列不是另一個英文 label 開頭時才用
+    if (nums.length === 0 && nextNL >= 0) {
+      const next2NL = text.indexOf('\n', nextNL + 1);
+      const nextLine = text.slice(nextNL + 1, next2NL < 0 ? text.length : next2NL);
+      if (!/^\s*[A-Z][A-Z0-9]/.test(nextLine)) {
+        numStrs = nextLine.match(/-?[\d,]{1,12}/g) || [];
+        nums = numStrs
+          .map(s => s.replace(/,/g, ''))
+          .filter(s => /^-?\d+$/.test(s))
+          .map(Number)
+          .filter(n => Number.isFinite(n))
+          .slice(0, 3);
+      }
+    }
+
+    if (nums.length === 3) return nums[1];
+    // 同列只有 2 個數字無法判斷哪欄為空,跳過此次匹配
+  }
+  return null;
+}
+
 // 智慧掃描:一張對帳單同時擷取多個欄位
 // 對齊範本:展晟照明對帳單格式
 //   月份 2026/02/26 ~ 2026/03/25  /  115/3月
@@ -131,6 +178,8 @@ export function extractBillFields(text) {
     customerName: null,
     receivable: null,
     overdue: null,
+    eClass1: null,         // 類別 E1 列的「其他1」欄
+    eClass2: null,         // 類別 E2 列的「其他1」欄
     rawText: text,
   };
 
@@ -199,6 +248,11 @@ export function extractBillFields(text) {
       if (Number.isFinite(n)) result.receivable = n;
     }
   }
+
+  // ─── E類1 / E類2 從類別表的「其他1」欄取值 ───
+  // 對 raw text(保留換行)做匹配,類別表常見每行一筆
+  result.eClass1 = findCategoryOther(text, 'E1');
+  result.eClass2 = findCategoryOther(text, 'E2');
 
   // ─── 累計逾期未收 ───
   const od = cleaned.match(/(?:累計)?(?:逾期)?未收[\s:：]*([0-9,]+)/);

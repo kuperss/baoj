@@ -533,10 +533,12 @@ function ocrCard(label, value, onApply) {
 // ─── 對帳單多欄位面板 ───
 function billPanel(fields) {
   const items = [
-    { key: 'month',        label: '月份',     value: fields.month,        type: 'text' },
-    { key: 'customerCode', label: '客戶編號', value: fields.customerCode, type: 'text' },
-    { key: 'customerName', label: '客戶名稱', value: fields.customerName, type: 'text' },
-    { key: 'receivable',   label: '應收金額', value: fields.receivable,   type: 'amount' },
+    { key: 'month',        label: '月份',           value: fields.month,        type: 'text' },
+    { key: 'customerCode', label: '客戶編號',       value: fields.customerCode, type: 'text' },
+    { key: 'customerName', label: '客戶名稱',       value: fields.customerName, type: 'text' },
+    { key: 'receivable',   label: '應收金額',       value: fields.receivable,   type: 'amount' },
+    { key: 'eClass1',      label: 'E類1 (其他1)',   value: fields.eClass1,      type: 'amount' },
+    { key: 'eClass2',      label: 'E類2 (其他1)',   value: fields.eClass2,      type: 'amount' },
   ];
   if (fields.overdue) {
     items.push({ key: 'unpaid', label: '逾期未收', value: fields.overdue, type: 'amount' });
@@ -583,6 +585,8 @@ function billPanel(fields) {
     customerCode: fields.customerCode,
     customerName: fields.customerName,
     receivable: fields.receivable,
+    eClass1: fields.eClass1,
+    eClass2: fields.eClass2,
     unpaid: fields.overdue,
   });
 
