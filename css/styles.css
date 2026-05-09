@@ -308,7 +308,7 @@ input  { font-family: inherit; }
     radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.25) 0%, transparent 60%);
   pointer-events: none;
 }
-.scan-cta > * { position: relative; z-index: 1; }
+.scan-cta > * { position: relative; z-index: 1; min-width: 0; }
 .scan-cta-icon {
   width: 44px;
   height: 44px;
@@ -499,11 +499,15 @@ input  { font-family: inherit; }
   grid-template-columns: 1fr 1fr;
   gap: var(--s-3);
 }
+/* Grid 子項預設 min-width: auto = 內容固有寬度,會把 placeholder 全寬度算進去
+   導致 1fr 1fr 失效並橫向溢出。強制可縮小才能讓欄位真正等分。 */
+.grid-2 > * { min-width: 0; }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
 }
 .field > label,
 .field > span {
@@ -558,8 +562,10 @@ input  { font-family: inherit; }
   display: flex;
   gap: 6px;
   align-items: stretch;
+  min-width: 0;
 }
-.input-with-cam input { flex: 1; text-align: right; }
+/* width: 0 + flex: 1 讓 input 能完全縮小,不被 placeholder 撐住最小寬度 */
+.input-with-cam input { flex: 1; min-width: 0; width: 0; text-align: right; }
 .input-with-cam.text input { text-align: left; }
 
 /* ───────────────────────── BUTTONS ───────────────────────── */
@@ -723,6 +729,7 @@ input  { font-family: inherit; }
   border: 1px solid var(--border);
   transition: border-color var(--t-fast);
 }
+.dyn-row > * { min-width: 0; }
 .dyn-row:hover { border-color: var(--border-strong); }
 .dyn-row input {
   font: inherit;
@@ -1242,6 +1249,20 @@ details[open] { padding-bottom: 4px; }
 @keyframes dialog-in {
   from { transform: translateY(8px) scale(0.96); opacity: 0; }
   to   { transform: translateY(0) scale(1);     opacity: 1; }
+}
+
+/* ───────────────────────── 窄畫面(< 380px)堆疊備案 ───────────────────────── */
+@media (max-width: 380px) {
+  .scan-cta {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--s-2) var(--s-3);
+  }
+  .scan-cta-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-top: 4px;
+  }
 }
 
 /* ───────────────────────── UTILITIES ───────────────────────── */

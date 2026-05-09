@@ -71,14 +71,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function hydrateFromDraft() {
   const d = loadDraft();
-  if (!d) return;
-  state = { ...makeEmptyState(), ...d };
-  if (!Array.isArray(state.checks)) state.checks = [];
-  if (!Array.isArray(state.remits)) state.remits = [];
-  SCALAR_KEYS.forEach(k => {
-    const el = document.querySelector(`[data-key="${k}"]`);
-    if (el) el.value = state[k] ?? '';
-  });
+  if (d) {
+    state = { ...makeEmptyState(), ...d };
+    if (!Array.isArray(state.checks)) state.checks = [];
+    if (!Array.isArray(state.remits)) state.remits = [];
+    SCALAR_KEYS.forEach(k => {
+      const el = document.querySelector(`[data-key="${k}"]`);
+      if (el) el.value = state[k] ?? '';
+    });
+  }
+  // 無論有沒有 draft,都要 render 出空白佔位提示
   renderChecks();
   renderRemits();
 }
