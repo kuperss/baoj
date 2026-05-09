@@ -11,6 +11,7 @@ import {
   extractCandidates,
   extractCodeCandidates,
   extractNameCandidates,
+  extractBillFields,
 } from './ocr.js';
 import { icons } from './icons.js';
 
@@ -114,6 +115,8 @@ function bindDynamicLists() {
     onStateChanged();
   });
   $('#btn-scan-check').addEventListener('click', () => openOcr('check'));
+  const billBtn = $('#btn-scan-bill');
+  if (billBtn) billBtn.addEventListener('click', () => openOcr('bill'));
 }
 
 function renderChecks() {
@@ -410,6 +413,7 @@ async function openOcr(mode, ctx = {}) {
     'check':       '掃描支票(自動新增)',
     'check-row':   `更新支票 #${(ctx.index ?? 0) + 1}`,
     'remit-row':   `更新匯款 #${(ctx.index ?? 0) + 1}`,
+    'bill':        '掃描對帳單',
   };
   $('#ocr-title').textContent = titles[mode] || '掃描';
   $('#ocr-results').innerHTML = '';
@@ -476,8 +480,17 @@ async function doShutter() {
 function showCandidates(text) {
   const wrap = $('#ocr-results');
   wrap.innerHTML = '';
+  wrap.classList.remove('bill');
 
   if (!ocrContext) return;
+
+  // 對帳單智慧掃描:多欄位面板
+  if (ocrContext.mode === 'bill') {
+    const fields = extractBillFields(text);
+    wrap.classList.add('bill');
+    wrap.appendChild(billPanel(fields));
+    return;
+  }
 
   // 文字模式:客戶編號或客戶名稱
   if (ocrContext.mode === 'text-field') {
@@ -515,6 +528,88 @@ function ocrCard(label, value, onApply) {
   `;
   card.querySelector('button').addEventListener('click', onApply);
   return card;
+}
+
+// ─── 對帳單多欄位面板 ───
+function billPanel(fields) {
+  const items = [
+    { key: 'month',        label: '月份',     value: fields.month,        type: 'text' },
+    { key: 'customerCode', label: '客戶編號', value: fields.customerCode, type: 'text' },
+    { key: 'customerName', label: '客戶名稱', value: fields.customerName, type: 'text' },
+    { key: 'receivable',   label: '應收金額', value: fields.receivable,   type: 'amount' },
+  ];
+  if (fields.overdue) {
+    items.push({ key: 'unpaid', label: '逾期未收', value: fields.overdue, type: 'amount' });
+  }
+
+  const panel = document.createElement('div');
+  panel.className = 'ocr-bill-panel';
+  const foundCount = items.filter(it => it.value != null && it.value !== '').length;
+
+  panel.innerHTML = `
+    <div class="ocr-bill-head">
+      ${icons.check}
+      <span>辨識完成 — 找到 ${foundCount}/${items.length} 個欄位</span>
+    </div>
+    <div class="ocr-bill-fields"></div>
+    <button type="button" class="ocr-bill-cta" id="ocr-fill-all">
+      ${icons.check}
+      <span>全部填入</span>
+    </button>
+  `;
+
+  const list = panel.querySelector('.ocr-bill-fields');
+  items.forEach(it => {
+    const row = document.createElement('label');
+    const has = it.value != null && it.value !== '';
+    row.className = 'ocr-field-row' + (has ? '' : ' disabled');
+    const display = has
+      ? (it.type === 'amount' ? fmt(it.value) : String(it.value))
+      : '未抽到';
+    row.innerHTML = `
+      <input type="checkbox" ${has ? 'checked' : 'disabled'} data-bill-key="${it.key}" data-bill-type="${it.type}">
+      <div class="ocr-field-info">
+        <div class="ocr-field-label">${escapeHtml(it.label)}</div>
+        <div class="ocr-field-value">${escapeHtml(display)}</div>
+      </div>
+      <span class="ocr-field-tag">${has ? '已找到' : '未找到'}</span>
+    `;
+    list.appendChild(row);
+  });
+
+  // 把欄位值 stash 在 panel 上,fillAll 時讀
+  panel.dataset.values = JSON.stringify({
+    month: fields.month,
+    customerCode: fields.customerCode,
+    customerName: fields.customerName,
+    receivable: fields.receivable,
+    unpaid: fields.overdue,
+  });
+
+  panel.querySelector('#ocr-fill-all').addEventListener('click', () => {
+    const values = JSON.parse(panel.dataset.values);
+    const checks = panel.querySelectorAll('input[type="checkbox"]:checked');
+    let appliedCount = 0;
+    checks.forEach(cb => {
+      const key = cb.dataset.billKey;
+      const v = values[key];
+      if (v == null || v === '') return;
+      const valStr = cb.dataset.billType === 'amount' ? String(Math.round(Number(v))) : String(v);
+      state[key] = valStr;
+      const el = document.querySelector(`[data-key="${key}"]`);
+      if (el) el.value = valStr;
+      appliedCount++;
+    });
+    if (appliedCount > 0) {
+      onStateChanged();
+      toast(`已填入 ${appliedCount} 個欄位`, 'success');
+      closeOcr();
+    } else {
+      toast('沒有勾選任何欄位', 'warning');
+    }
+  });
+
+  return panel;
 }
 
 function emptyOcrCard(msg) {

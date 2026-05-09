@@ -117,6 +117,99 @@ export function extractNameCandidates(text) {
   return candidates.slice(0, 6);
 }
 
+// 智慧掃描:一張對帳單同時擷取多個欄位
+// 對齊範本:展晟照明對帳單格式
+//   月份 2026/02/26 ~ 2026/03/25  /  115/3月
+//   客戶 S5A0806灣連燈飾有限公司(火車頭)
+//   本月應收金額總計 994,706
+//   累計逾期未收 0
+export function extractBillFields(text) {
+  const cleaned = text.replace(/\s+/g, ' ');
+  const result = {
+    month: null,
+    customerCode: null,
+    customerName: null,
+    receivable: null,
+    overdue: null,
+    rawText: text,
+  };
+
+  // ─── 月份 ───
+  // 優先:民國年 115/3月 或 115年3月
+  const rocMatch = cleaned.match(/(\d{2,3})[\/\s年]+(\d{1,2})\s*月/);
+  if (rocMatch) {
+    const yyAd = (Number(rocMatch[1]) + 1911) % 100;
+    result.month = `${String(yyAd).padStart(2, '0')}/${String(rocMatch[2]).padStart(2, '0')}`;
+  }
+  // 其次:西元日期範圍 2026/02/26 ~ 2026/03/25 → 取結束日的年月
+  if (!result.month) {
+    const range = cleaned.match(/(\d{4})[\/\-](\d{1,2})[\/\-]\d{1,2}\s*[~\-至到]+\s*(\d{4})[\/\-](\d{1,2})[\/\-]\d{1,2}/);
+    if (range) {
+      const yy = String(Number(range[3]) % 100).padStart(2, '0');
+      const mm = String(range[4]).padStart(2, '0');
+      result.month = `${yy}/${mm}`;
+    }
+  }
+  // 最後備援:純年/月格式 26/03 等
+  if (!result.month) {
+    const ym = cleaned.match(/\b(\d{2})[\/\-](\d{1,2})\b/);
+    if (ym && Number(ym[2]) >= 1 && Number(ym[2]) <= 12) {
+      result.month = `${ym[1]}/${String(ym[2]).padStart(2, '0')}`;
+    }
+  }
+
+  // ─── 客戶編號 ───
+  // 對帳單客戶編號常見格式:S5A0806、A301、5BS4 等
+  // 抓「客戶」後面的編號 → 最高優先
+  const custNearby = cleaned.match(/客戶[:\s]*([A-Za-z][A-Za-z0-9]{2,9})/);
+  if (custNearby) {
+    result.customerCode = custNearby[1].toUpperCase();
+  }
+  // 備援:文字中第一個英數混合 3-10 字代碼
+  if (!result.customerCode) {
+    const codeMatch = cleaned.match(/\b([A-Z]\d?[A-Z]?\d{3,7})\b/i);
+    if (codeMatch) result.customerCode = codeMatch[1].toUpperCase();
+  }
+
+  // ─── 客戶名稱 ───
+  // 1) 客戶編號後面緊跟著的中文公司名(以「公司」結尾)
+  if (result.customerCode) {
+    const after = cleaned.split(result.customerCode)[1] || '';
+    const co = after.match(/^[\s]*([一-龥]{2,16}(?:股份)?(?:有限)?公司)/);
+    if (co) result.customerName = co[1];
+  }
+  // 2) 文字中第一個「XX...有限公司」或「XX...股份公司」
+  if (!result.customerName) {
+    const co2 = cleaned.match(/([一-龥]{2,12}(?:股份)?(?:有限)?公司)/);
+    if (co2) result.customerName = co2[1];
+  }
+
+  // ─── 應收金額 ───
+  // 優先:本月應收金額總計
+  const recv = cleaned.match(/本月應收(?:金額)?(?:總計)?[\s:：]*([0-9,]{4,})/);
+  if (recv) {
+    const n = Number(recv[1].replace(/,/g, ''));
+    if (Number.isFinite(n)) result.receivable = n;
+  }
+  // 備援:金額總計
+  if (!result.receivable) {
+    const tot = cleaned.match(/(?:金額總計|應收金額總計)[\s:：]*([0-9,]{4,})/);
+    if (tot) {
+      const n = Number(tot[1].replace(/,/g, ''));
+      if (Number.isFinite(n)) result.receivable = n;
+    }
+  }
+
+  // ─── 累計逾期未收 ───
+  const od = cleaned.match(/(?:累計)?(?:逾期)?未收[\s:：]*([0-9,]+)/);
+  if (od) {
+    const n = Number(od[1].replace(/,/g, ''));
+    if (Number.isFinite(n) && n > 0) result.overdue = n;
+  }
+
+  return result;
+}
+
 export async function terminateWorker() {
   if (worker) {
     try { await worker.terminate(); } catch (_) {}

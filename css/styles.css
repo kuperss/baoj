@@ -285,6 +285,176 @@ input  { font-family: inherit; }
   border-color: var(--blue-100);
   background: linear-gradient(180deg, var(--blue-50), var(--surface) 50%);
 }
+
+/* ─── 智慧掃描 CTA ─── */
+.scan-cta {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  background: linear-gradient(135deg, var(--blue-700) 0%, var(--blue-900) 100%);
+  border: 0;
+  color: #fff;
+  padding: var(--s-4);
+  position: relative;
+  overflow: hidden;
+}
+.scan-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+.scan-cta > * { position: relative; z-index: 1; }
+.scan-cta-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.scan-cta-icon svg { width: 22px; height: 22px; color: #fff; }
+.scan-cta-text { min-width: 0; }
+.scan-cta-title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.scan-cta-desc {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.4;
+}
+.scan-cta-btn {
+  background: #fff;
+  color: var(--blue-700);
+  border: 0;
+  padding: 10px 18px;
+  min-height: 40px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.scan-cta-btn:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+.scan-cta-btn:active { transform: translateY(0); }
+.scan-cta-btn svg { color: var(--blue-700); }
+
+/* ─── 多欄位 OCR 結果面板(對帳單掃描專用) ─── */
+.ocr-bill-panel {
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text);
+  border-radius: var(--r-lg);
+  padding: var(--s-4);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  max-height: 100%;
+}
+.ocr-bill-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.ocr-bill-head svg { width: 14px; height: 14px; color: var(--emerald-600); }
+.ocr-bill-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ocr-field-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s-3);
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--slate-50);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.ocr-field-row:hover { background: var(--slate-100); border-color: var(--border-strong); }
+.ocr-field-row.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--slate-100);
+}
+.ocr-field-row.disabled:hover { background: var(--slate-100); border-color: var(--border); }
+.ocr-field-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.ocr-field-row .ocr-field-info { min-width: 0; }
+.ocr-field-row .ocr-field-label {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ocr-field-row .ocr-field-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: var(--tnum);
+  color: var(--text);
+  word-break: break-all;
+  margin-top: 1px;
+}
+.ocr-field-row.disabled .ocr-field-value { color: var(--text-3); font-style: italic; font-weight: 500; }
+.ocr-field-row .ocr-field-tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--emerald-100);
+  color: var(--emerald-700);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ocr-field-row.disabled .ocr-field-tag {
+  background: var(--slate-200);
+  color: var(--text-3);
+}
+.ocr-bill-cta {
+  margin-top: var(--s-2);
+  background: var(--primary);
+  color: #fff;
+  border: 0;
+  border-radius: var(--r-md);
+  padding: 12px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.ocr-bill-cta:hover { background: var(--primary-hover); }
+.ocr-bill-cta:disabled { background: var(--slate-300); cursor: not-allowed; }
+.ocr-bill-cta svg { width: 16px; height: 16px; }
 .card-head {
   display: flex;
   align-items: center;
@@ -883,6 +1053,12 @@ details[open] { padding-bottom: 4px; }
   flex-direction: column;
   gap: 6px;
   scrollbar-width: thin;
+}
+/* 對帳單模式:結果面板撐滿整個 body 區域(蓋住預覽圖) */
+.ocr-results.bill {
+  top: var(--s-3);
+  bottom: var(--s-3);
+  max-height: none;
 }
 .ocr-card {
   background: rgba(255, 255, 255, 0.97);

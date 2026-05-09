@@ -1,5 +1,5 @@
 // sw.js — 離線快取
-const CACHE = 'baoj-v2';
+const CACHE = 'baoj-v3';
 const CORE = [
   './',
   './index.html',
