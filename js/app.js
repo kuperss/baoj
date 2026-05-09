@@ -383,6 +383,14 @@ function renderHistory() {
 // ───────── OCR ─────────
 const dialog = () => $('#ocr-dialog');
 let ocrContext = null;
+// 對帳單跨頁累積掃描:連續拍多張 → 合併欄位(空欄位才會被新值填入)
+let billAccumulated = null;
+const BILL_KEYS = ['month', 'customerCode', 'customerName', 'receivable', 'eClass1', 'eClass2', 'overdue'];
+function newBillAccumulated() {
+  const a = { scanCount: 0, rawText: '' };
+  BILL_KEYS.forEach(k => a[k] = null);
+  return a;
+}
 
 function bindOcrButtons() {
   // 數字 OCR(應收 / 現金)
@@ -409,13 +417,16 @@ function bindOcrButtons() {
 
 async function openOcr(mode, ctx = {}) {
   ocrContext = { mode, ...ctx };
+  if (mode === 'bill') {
+    billAccumulated = newBillAccumulated();
+  }
   const titles = {
     'field':       `掃描「${labelOf(ctx.fieldKey)}」金額`,
     'text-field':  `掃描「${labelOf(ctx.fieldKey)}」`,
     'check':       '掃描支票(自動新增)',
     'check-row':   `更新支票 #${(ctx.index ?? 0) + 1}`,
     'remit-row':   `更新匯款 #${(ctx.index ?? 0) + 1}`,
-    'bill':        '掃描對帳單',
+    'bill':        '掃描對帳單(可連拍多頁)',
   };
   $('#ocr-title').textContent = titles[mode] || '掃描';
   $('#ocr-results').innerHTML = '';
@@ -494,11 +505,26 @@ function showCandidates(text) {
 
   if (!ocrContext) return;
 
-  // 對帳單智慧掃描:多欄位面板
+  // 對帳單智慧掃描:多欄位面板(支援連拍多頁合併)
   if (ocrContext.mode === 'bill') {
     const fields = extractBillFields(text);
+    if (!billAccumulated) billAccumulated = newBillAccumulated();
+    billAccumulated.scanCount++;
+    // 合併規則:已有非空值就保留,只填入空欄位
+    BILL_KEYS.forEach(k => {
+      const cur = billAccumulated[k];
+      const incoming = fields[k];
+      if ((cur == null || cur === '') && incoming != null && incoming !== '') {
+        billAccumulated[k] = incoming;
+      }
+    });
+    billAccumulated.rawText += `\n=== Scan ${billAccumulated.scanCount} ===\n${text}\n`;
+    // 標題顯示已掃幾張
+    $('#ocr-title').textContent = `掃描對帳單 (已 ${billAccumulated.scanCount} 張)`;
+    // 隱藏底部「重拍」(對帳單模式改用面板裡的「再拍下一頁」)
+    $('#btn-ocr-retake').classList.add('hidden');
     wrap.classList.add('bill');
-    wrap.appendChild(billPanel(fields));
+    wrap.appendChild(billPanel(billAccumulated));
     return;
   }
 
@@ -579,10 +605,11 @@ function billPanel(fields) {
   // Console 也印一份方便接 USB DevTools 看
   console.log('[OCR raw]\n' + rawText);
 
+  const scanCount = fields.scanCount || 1;
   panel.innerHTML = `
     <div class="ocr-bill-head">
       ${icons.check}
-      <span>辨識完成 — 找到 ${foundCount}/${items.length} 個欄位</span>
+      <span>累計 ${scanCount} 張 · 找到 ${foundCount}/${items.length} 個欄位</span>
     </div>
     <div class="ocr-bill-fields"></div>
     <details class="ocr-raw-wrap">
@@ -590,10 +617,16 @@ function billPanel(fields) {
       <pre class="ocr-raw">${escapeHtml(rawText) || '(空)'}</pre>
       <button type="button" class="btn-link ocr-raw-copy">複製文字</button>
     </details>
-    <button type="button" class="ocr-bill-cta" id="ocr-fill-all">
-      ${icons.check}
-      <span>全部填入</span>
-    </button>
+    <div class="ocr-bill-actions">
+      <button type="button" class="ocr-bill-secondary" id="ocr-rescan">
+        ${icons.camera}
+        <span>再拍下一頁(合併)</span>
+      </button>
+      <button type="button" class="ocr-bill-cta" id="ocr-fill-all">
+        ${icons.check}
+        <span>全部填入</span>
+      </button>
+    </div>
   `;
 
   const list = panel.querySelector('.ocr-bill-fields');
@@ -616,6 +649,7 @@ function billPanel(fields) {
   });
 
   // 把欄位值 stash 在 panel 上,fillAll 時讀
+  // (fields 可能就是 billAccumulated)
   panel.dataset.values = JSON.stringify({
     month: fields.month,
     customerCode: fields.customerCode,
@@ -625,6 +659,24 @@ function billPanel(fields) {
     eClass2: fields.eClass2,
     unpaid: fields.overdue,
   });
+
+  // 「再拍下一頁(合併)」 — 回到相機,保留 billAccumulated
+  const rescanBtn = panel.querySelector('#ocr-rescan');
+  if (rescanBtn) {
+    rescanBtn.addEventListener('click', async () => {
+      $('#ocr-results').innerHTML = '';
+      $('#ocr-results').classList.remove('bill');
+      $('#ocr-preview').classList.add('hidden');
+      $('#ocr-video').classList.remove('hidden');
+      $('#ocr-frame').classList.remove('hidden');
+      $('#btn-ocr-shutter').classList.remove('hidden');
+      $('#btn-ocr-retake').classList.add('hidden');
+      // 視訊若被瀏覽器暫停就重啟
+      try { await $('#ocr-video').play(); } catch (_) {}
+      const cnt = billAccumulated?.scanCount ?? 0;
+      setStatus(`已累計 ${cnt} 張,請拍下一張對齊好再按拍照`, false);
+    });
+  }
 
   // 複製原始文字
   const copyBtn = panel.querySelector('.ocr-raw-copy');

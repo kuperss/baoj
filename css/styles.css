@@ -436,10 +436,14 @@ input  { font-family: inherit; }
   background: var(--slate-200);
   color: var(--text-3);
 }
-.ocr-bill-cta {
+.ocr-bill-actions {
+  display: flex;
+  gap: var(--s-2);
   margin-top: var(--s-2);
-  background: var(--primary);
-  color: #fff;
+}
+.ocr-bill-actions > * { flex: 1; }
+.ocr-bill-cta,
+.ocr-bill-secondary {
   border: 0;
   border-radius: var(--r-md);
   padding: 12px;
@@ -452,6 +456,20 @@ input  { font-family: inherit; }
   justify-content: center;
   gap: 6px;
 }
+.ocr-bill-cta {
+  background: var(--primary);
+  color: #fff;
+}
+.ocr-bill-cta:hover { background: var(--primary-hover); }
+.ocr-bill-cta:disabled { background: var(--slate-300); cursor: not-allowed; }
+.ocr-bill-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+.ocr-bill-secondary:hover { background: var(--slate-50); border-color: var(--slate-400); }
+.ocr-bill-cta svg,
+.ocr-bill-secondary svg { width: 16px; height: 16px; }
 
 /* ─── 原始辨識文字(除錯用) ─── */
 .ocr-raw-wrap {
