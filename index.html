@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-  <meta name="theme-color" content="#1976d2">
+  <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>應收帳款計算</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./css/styles.css">
@@ -15,29 +15,41 @@
 
 <header class="topbar">
   <div class="brand">
-    <span class="brand-icon">📒</span>
+    <span class="brand-mark" data-icon="calculator"></span>
     <span class="brand-name">應收計算</span>
   </div>
-  <nav class="tabs">
-    <button class="tab active" data-page="calc">計算</button>
-    <button class="tab" data-page="history">歷史</button>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-page="calc" role="tab">
+      <span data-icon="calculator"></span>
+      <span>計算</span>
+    </button>
+    <button class="tab" data-page="history" role="tab">
+      <span data-icon="history"></span>
+      <span>歷史</span>
+    </button>
   </nav>
 </header>
 
-<!-- 差額置頂指示燈 -->
+<!-- 差額置頂 -->
 <div id="diff-bar" class="diff-bar status-balanced">
   <div class="diff-main">
     <span class="diff-label">差額</span>
     <span id="diff-value" class="diff-value">0</span>
   </div>
-  <div id="diff-hint" class="diff-hint">✔ 已平衡</div>
+  <div id="diff-hint" class="diff-hint">
+    <span data-icon="check"></span>
+    <span id="diff-hint-text">已平衡</span>
+  </div>
 </div>
 
 <main id="page-calc" class="page page-calc">
 
   <!-- 客戶資訊 -->
   <section class="card">
-    <h2 class="card-title">客戶資訊</h2>
+    <h2 class="card-title">
+      <span data-icon="user"></span>
+      客戶資訊
+    </h2>
     <div class="grid-2">
       <label class="field"><span>日期</span>
         <input type="text" data-key="date" placeholder="MM/DD" autocomplete="off">
@@ -45,35 +57,52 @@
       <label class="field"><span>月份</span>
         <input type="text" data-key="month" placeholder="YY/MM" autocomplete="off">
       </label>
-      <label class="field"><span>客戶編號</span>
-        <input type="text" data-key="customerCode" autocomplete="off">
+    </div>
+    <div style="height: var(--s-3)"></div>
+    <div class="grid-2">
+      <label class="field">
+        <span>客戶編號</span>
+        <div class="input-with-cam text">
+          <input type="text" data-key="customerCode" autocomplete="off" placeholder="例:S5B">
+          <button type="button" class="btn-icon" data-ocr-text="customerCode" aria-label="掃描客戶編號" data-icon="camera"></button>
+        </div>
       </label>
-      <label class="field"><span>客戶名稱</span>
-        <input type="text" data-key="customerName" autocomplete="off">
+      <label class="field">
+        <span>客戶名稱</span>
+        <div class="input-with-cam text">
+          <input type="text" data-key="customerName" autocomplete="off" placeholder="例:統一企業">
+          <button type="button" class="btn-icon" data-ocr-text="customerName" aria-label="掃描客戶名稱" data-icon="camera"></button>
+        </div>
       </label>
     </div>
   </section>
 
   <!-- 應收 -->
   <section class="card card-emphasis">
-    <h2 class="card-title">應收帳款</h2>
+    <h2 class="card-title">
+      <span data-icon="fileText"></span>
+      應收帳款
+    </h2>
     <div class="field field-large">
-      <span>應收</span>
+      <span>金額</span>
       <div class="input-with-cam">
         <input type="text" inputmode="decimal" data-key="receivable" data-num placeholder="0">
-        <button type="button" class="btn-cam" data-ocr="receivable" aria-label="掃描應收金額">📷</button>
+        <button type="button" class="btn-icon" data-ocr="receivable" aria-label="掃描應收金額" data-icon="camera"></button>
       </div>
     </div>
   </section>
 
   <!-- 現金 -->
   <section class="card">
-    <h2 class="card-title">現金 / 即時收款</h2>
+    <h2 class="card-title">
+      <span data-icon="banknote"></span>
+      現金 / 即時收款
+    </h2>
     <div class="field">
       <span>現金</span>
       <div class="input-with-cam">
         <input type="text" inputmode="decimal" data-key="cash" data-num placeholder="0">
-        <button type="button" class="btn-cam" data-ocr="cash" aria-label="掃描現金金額">📷</button>
+        <button type="button" class="btn-icon" data-ocr="cash" aria-label="掃描現金金額" data-icon="camera"></button>
       </div>
     </div>
   </section>
@@ -81,10 +110,19 @@
   <!-- 支票 -->
   <section class="card">
     <div class="card-head">
-      <h2 class="card-title">支票</h2>
+      <h2 class="card-title">
+        <span data-icon="receipt"></span>
+        支票
+      </h2>
       <div class="card-actions">
-        <button type="button" class="btn-cam" id="btn-scan-check" aria-label="掃描支票">📷 掃描支票</button>
-        <button type="button" class="btn-add" id="btn-add-check">＋ 新增</button>
+        <button type="button" class="btn-pill primary" id="btn-scan-check">
+          <span data-icon="scanLine"></span>
+          掃描
+        </button>
+        <button type="button" class="btn-add" id="btn-add-check">
+          <span data-icon="plus"></span>
+          新增
+        </button>
       </div>
     </div>
     <div id="checks-list" class="dyn-list"></div>
@@ -97,9 +135,15 @@
   <!-- 匯款 -->
   <section class="card">
     <div class="card-head">
-      <h2 class="card-title">匯款</h2>
+      <h2 class="card-title">
+        <span data-icon="send"></span>
+        匯款
+      </h2>
       <div class="card-actions">
-        <button type="button" class="btn-add" id="btn-add-remit">＋ 新增</button>
+        <button type="button" class="btn-add" id="btn-add-remit">
+          <span data-icon="plus"></span>
+          新增
+        </button>
       </div>
     </div>
     <div id="remits-list" class="dyn-list"></div>
@@ -112,7 +156,7 @@
   <!-- 進階(預設摺疊) -->
   <section class="card">
     <details>
-      <summary class="card-title">進階(E類 / 折讓 / LED / 稅)</summary>
+      <summary>進階(E類 / 折讓 / LED / 稅)</summary>
 
       <h3 class="sub-title">E 類 → GA%</h3>
       <div class="grid-2">
@@ -123,15 +167,9 @@
           <input type="text" inputmode="decimal" data-key="eClass2" data-num placeholder="0">
         </label>
       </div>
-      <div class="row-summary readonly">
-        <span>E類合計</span><strong id="auto-eTotal">0</strong>
-      </div>
-      <div class="row-summary readonly">
-        <span>GA% (× 5%)</span><strong id="auto-gaPercent">0</strong>
-      </div>
-      <div class="row-summary readonly">
-        <span>GA稅 (GA% × 5%)</span><strong id="auto-gaTax">0</strong>
-      </div>
+      <div class="row-summary readonly"><span>E類合計</span><strong id="auto-eTotal">0</strong></div>
+      <div class="row-summary readonly"><span>GA% (× 5%)</span><strong id="auto-gaPercent">0</strong></div>
+      <div class="row-summary readonly"><span>GA稅 (GA% × 5%)</span><strong id="auto-gaTax">0</strong></div>
 
       <h3 class="sub-title">折讓</h3>
       <div class="grid-2">
@@ -170,7 +208,7 @@
           <input type="text" inputmode="decimal" data-key="tailDiscount" data-num placeholder="0">
         </label>
       </div>
-      <button type="button" id="btn-fill-tail" class="btn-link">將差額帶入尾折</button>
+      <button type="button" id="btn-fill-tail" class="btn-link">→ 將差額帶入尾折</button>
 
       <h3 class="sub-title">其他 / 預收 / 未收 / 溢收</h3>
       <div class="grid-2">
@@ -187,34 +225,43 @@
           <input type="text" inputmode="decimal" data-key="overpaid" data-num placeholder="0">
         </label>
       </div>
-      <div class="btn-row">
-        <button type="button" id="btn-autofill-unpaid" class="btn-link">差額 &gt; 0 → 帶入未收</button>
-        <button type="button" id="btn-autofill-overpaid" class="btn-link">差額 &lt; 0 → 帶入溢收</button>
+      <div class="btn-row" style="margin-top: var(--s-2)">
+        <button type="button" id="btn-autofill-unpaid" class="btn-link">→ 差額帶入未收</button>
+        <button type="button" id="btn-autofill-overpaid" class="btn-link">→ 差額帶入溢收</button>
       </div>
 
-      <div class="row-summary readonly">
-        <span>折讓合計</span><strong id="auto-allowanceTotal">0</strong>
-      </div>
-      <div class="row-summary readonly">
-        <span>折讓稅合計</span><strong id="auto-allowanceTaxTotal">0</strong>
-      </div>
+      <div class="row-summary readonly"><span>折讓合計</span><strong id="auto-allowanceTotal">0</strong></div>
+      <div class="row-summary readonly"><span>折讓稅合計</span><strong id="auto-allowanceTaxTotal">0</strong></div>
     </details>
   </section>
 
   <!-- 動作 -->
   <section class="card actions">
-    <button type="button" id="btn-reset" class="btn-secondary">重置</button>
-    <button type="button" id="btn-finish" class="btn-primary" disabled>完成並存檔</button>
+    <button type="button" id="btn-reset" class="btn btn-secondary">
+      <span data-icon="refresh"></span>
+      重置
+    </button>
+    <button type="button" id="btn-finish" class="btn btn-primary" disabled>
+      <span data-icon="check"></span>
+      完成並存檔
+    </button>
   </section>
 
-  <p class="hint">差額為 0 時可存檔。所有資料只儲存在這支手機的瀏覽器,不會上傳。</p>
+  <p class="hint">差額為 0 且填入客戶編號時可存檔。所有資料只儲存在這支手機的瀏覽器,不會上傳。</p>
 </main>
 
 <main id="page-history" class="page page-history hidden">
   <section class="card">
-    <h2 class="card-title">歷史紀錄</h2>
+    <h2 class="card-title">
+      <span data-icon="history"></span>
+      歷史紀錄
+    </h2>
     <div id="history-list" class="history-list"></div>
-    <p id="history-empty" class="hint">尚無紀錄。完成一筆對帳後會出現在這裡。</p>
+    <div id="history-empty" class="empty-state">
+      <div class="empty-icon" data-icon="inbox"></div>
+      <h3>尚無紀錄</h3>
+      <p>完成一筆對帳後會出現在這裡</p>
+    </div>
   </section>
 </main>
 
@@ -222,22 +269,45 @@
 <dialog id="ocr-dialog" class="ocr-dialog">
   <div class="ocr-head">
     <h2 id="ocr-title">掃描</h2>
-    <button type="button" class="btn-close" id="btn-ocr-close" aria-label="關閉">✕</button>
+    <button type="button" class="btn-close-dialog" id="btn-ocr-close" aria-label="關閉" data-icon="x"></button>
   </div>
   <div class="ocr-body">
     <video id="ocr-video" playsinline autoplay muted></video>
     <canvas id="ocr-canvas" hidden></canvas>
-    <div id="ocr-preview" class="ocr-preview hidden">
+    <div id="ocr-frame" class="ocr-frame"></div>
+    <div id="ocr-preview" class="hidden">
       <img id="ocr-preview-img" alt="拍照預覽">
     </div>
     <div id="ocr-status" class="ocr-status">啟動相機中…</div>
     <div id="ocr-results" class="ocr-results"></div>
   </div>
   <div class="ocr-actions">
-    <button type="button" id="btn-ocr-shutter" class="btn-primary">📸 拍照</button>
-    <button type="button" id="btn-ocr-retake" class="btn-secondary hidden">重拍</button>
+    <button type="button" id="btn-ocr-shutter" class="btn btn-primary">
+      <span data-icon="camera"></span>
+      拍照
+    </button>
+    <button type="button" id="btn-ocr-retake" class="btn btn-secondary hidden">
+      <span data-icon="refresh"></span>
+      重拍
+    </button>
   </div>
 </dialog>
+
+<!-- 自訂 Confirm 對話框 -->
+<div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-dialog">
+    <div class="modal-icon" data-icon="alert"></div>
+    <h3 class="modal-title" id="confirm-title">確認</h3>
+    <p class="modal-desc" id="confirm-desc"></p>
+    <div class="modal-actions">
+      <button type="button" id="confirm-cancel" class="btn btn-secondary">取消</button>
+      <button type="button" id="confirm-ok" class="btn btn-danger">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <script type="module" src="./js/app.js"></script>
 <script>
